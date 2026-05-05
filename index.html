@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- גרסה: 1.0.1 | תאריך: 2026-05-04 | תיקון: נתיב API ישיר ל-/.netlify/functions/ במקום /api/ (אין redirect ברפו זה) -->
+<!-- גרסה: 2.0.0 | תאריך: 2026-05-04 | הוספת מסך כניסה עם ת.ז., אימות מול רשימה מורשית, הצגת מספר בדיקות שנותרו -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -17,6 +17,7 @@
     --border: #e5e0fa;
     --danger: #e74c3c;
     --success: #00b894;
+    --warning: #fdcb6e;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -63,21 +64,30 @@ label {
     margin-bottom: 8px;
     font-size: 1rem;
 }
-textarea {
+input[type="text"], textarea {
     width: 100%;
-    min-height: 200px;
     padding: 14px;
     border: 2px solid var(--border);
     border-radius: 12px;
     font-family: 'Heebo', sans-serif;
     font-size: 1rem;
-    resize: vertical;
-    transition: border-color 0.2s;
     line-height: 1.6;
+    transition: border-color 0.2s;
 }
-textarea:focus {
+textarea {
+    min-height: 200px;
+    resize: vertical;
+}
+input[type="text"]:focus, textarea:focus {
     outline: none;
     border-color: var(--primary);
+}
+input.id-input {
+    text-align: center;
+    font-size: 1.4rem;
+    letter-spacing: 4px;
+    font-weight: 700;
+    direction: ltr;
 }
 .char-counter {
     text-align: left;
@@ -86,7 +96,7 @@ textarea:focus {
     margin-top: 6px;
 }
 .char-counter.error { color: var(--danger); font-weight: 700; }
-.btn-analyze {
+.btn {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
     border: none;
@@ -101,12 +111,22 @@ textarea:focus {
     transition: transform 0.15s, box-shadow 0.15s;
     box-shadow: 0 4px 12px rgba(108,92,231,0.3);
 }
-.btn-analyze:hover:not(:disabled) {
+.btn:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(108,92,231,0.4);
 }
-.btn-analyze:active:not(:disabled) { transform: translateY(0); }
-.btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary {
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 12px 24px;
+    box-shadow: none;
+}
+.btn-secondary:hover:not(:disabled) {
+    background: var(--bg);
+    box-shadow: none;
+}
 .error-msg {
     background: #ffe0e0;
     color: var(--danger);
@@ -116,6 +136,42 @@ textarea:focus {
     font-weight: 500;
     font-size: 0.95rem;
 }
+.info-bar {
+    background: linear-gradient(135deg, #e8e3fc, #f3eefe);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.info-bar .greeting {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.95rem;
+}
+.info-bar .usage {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+.info-bar .usage strong {
+    color: var(--primary);
+    font-size: 1rem;
+}
+.btn-logout {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+}
+.btn-logout:hover { background: var(--border); }
 .loading-card {
     text-align: center;
     padding: 40px 20px;
@@ -131,11 +187,7 @@ textarea:focus {
     margin: 0 auto 16px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.loading-text {
-    color: var(--text-dim);
-    font-weight: 500;
-}
-/* כרטיס תוצאה */
+.loading-text { color: var(--text-dim); font-weight: 500; }
 .result-card {
     text-align: center;
     padding: 36px 24px;
@@ -160,21 +212,6 @@ textarea:focus {
     opacity: 0.9;
     font-weight: 500;
 }
-.btn-reset {
-    background: white;
-    color: var(--primary);
-    border: 2px solid var(--primary);
-    padding: 12px 24px;
-    width: 100%;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 700;
-    font-family: 'Heebo', sans-serif;
-    cursor: pointer;
-    margin-top: 8px;
-    transition: background 0.15s;
-}
-.btn-reset:hover { background: var(--bg); }
 footer {
     text-align: center;
     color: var(--text-dim);
@@ -188,33 +225,49 @@ footer {
 <div class="container">
 
 <header>
-    <h1>בדיקת AI <span class="ver">v1.0.1</span></h1>
-    <p>הדבק את הטקסט שלך וקבל הערכת אחוז שימוש ב-AI</p>
+    <h1>בדיקת AI <span class="ver">v2.0.0</span></h1>
+    <p>מערכת זיהוי כתיבת AI לתלמידי תקשורת</p>
 </header>
 
-<!-- מסך קלט -->
-<div id="inputCard" class="card">
-    <label for="text">הטקסט לבדיקה</label>
-    <textarea id="text" placeholder="הדבק כאן את הטקסט (לפחות 50 תווים, עד 10,000)..." oninput="updateCounter()"></textarea>
-    <div id="charCounter" class="char-counter">0 / 10,000 תווים</div>
-    <button class="btn-analyze" id="analyzeBtn" onclick="analyzeText()">נתח את הטקסט</button>
-    <div id="errorMsg"></div>
+<!-- מסך כניסה -->
+<div id="loginCard" class="card">
+    <label for="idInput">תעודת זהות</label>
+    <input type="text" id="idInput" class="id-input" placeholder="הקלד 9 ספרות" maxlength="9" inputmode="numeric" pattern="[0-9]*">
+    <button class="btn" id="loginBtn" onclick="login()">כניסה</button>
+    <div id="loginError"></div>
 </div>
 
-<!-- מסך טעינה -->
-<div id="loadingCard" class="loading-card card">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">המערכת מנתחת את הטקסט...</div>
-</div>
+<!-- מסך ראשי (אחרי כניסה) -->
+<div id="mainScreen" style="display:none;">
+    <div class="info-bar">
+        <div>
+            <div class="greeting" id="greeting">שלום</div>
+            <div class="usage">בדיקות שנותרו היום: <strong id="remainingCount">3</strong></div>
+        </div>
+        <button class="btn-logout" onclick="logout()">יציאה</button>
+    </div>
 
-<!-- מסך תוצאה -->
-<div id="resultCard" class="result-card">
-    <div class="verdict-icon" id="verdictIcon">🤔</div>
-    <div class="verdict-text" id="verdictText"></div>
-    <div class="ai-likelihood" id="aiLikelihood">0%</div>
-    <div class="ai-likelihood-label">סיכוי שהטקסט נכתב על ידי AI</div>
+    <div id="inputCard" class="card">
+        <label for="text">הטקסט לבדיקה</label>
+        <textarea id="text" placeholder="הדבק כאן את הטקסט (לפחות 50 תווים, עד 10,000)..." oninput="updateCounter()"></textarea>
+        <div id="charCounter" class="char-counter">0 / 10,000 תווים</div>
+        <button class="btn" id="analyzeBtn" onclick="analyzeText()">נתח את הטקסט</button>
+        <div id="errorMsg"></div>
+    </div>
+
+    <div id="loadingCard" class="loading-card card">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">המערכת מנתחת את הטקסט...</div>
+    </div>
+
+    <div id="resultCard" class="result-card">
+        <div class="verdict-icon" id="verdictIcon">🤔</div>
+        <div class="verdict-text" id="verdictText"></div>
+        <div class="ai-likelihood" id="aiLikelihood">0%</div>
+        <div class="ai-likelihood-label">סיכוי שהטקסט נכתב על ידי AI</div>
+    </div>
+    <button id="resetBtn" class="btn btn-secondary" style="display:none;" onclick="reset()">בדוק טקסט נוסף</button>
 </div>
-<button id="resetBtn" class="btn-reset" style="display:none;" onclick="reset()">בדוק טקסט נוסף</button>
 
 <footer>
     מערכת בדיקת AI · בית חינוך גליל מערבי
@@ -225,6 +278,7 @@ footer {
 <script>
 const MIN_LENGTH = 50;
 const MAX_LENGTH = 10000;
+const STORAGE_KEY = 'lamed_student_session';
 
 const VERDICT_INFO = {
     'human':         { icon: '✅',  text: 'הטקסט נראה אנושי' },
@@ -233,6 +287,154 @@ const VERDICT_INFO = {
     'definitely_ai': { icon: '🚫',  text: 'הטקסט נראה כתוב על ידי AI' }
 };
 
+let currentSession = null;
+
+// ============= אתחול =============
+window.addEventListener('DOMContentLoaded', () => {
+    // בדיקה אם יש session שמור (תוקף יום אחד)
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const session = JSON.parse(saved);
+            const today = new Date().toDateString();
+            if (session.date === today && session.id_number) {
+                // ננסה להתחבר אוטומטית
+                autoLogin(session.id_number);
+                return;
+            }
+        }
+    } catch (e) {}
+    
+    // אם אין session - מציג מסך כניסה
+    document.getElementById('idInput').focus();
+});
+
+// סינון להזנת ספרות בלבד
+document.getElementById('idInput').addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+// כניסה ב-Enter
+document.getElementById('idInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') login();
+});
+
+// ============= פונקציות כניסה =============
+async function autoLogin(id_number) {
+    // ננסה להתחבר עם הת.ז. השמורה - אם זה לא עובד, נציג מסך כניסה
+    const success = await doLogin(id_number, true);
+    if (!success) {
+        clearSession();
+        document.getElementById('idInput').focus();
+    }
+}
+
+async function login() {
+    const id = document.getElementById('idInput').value.trim();
+    if (!id || id.length < 7) {
+        showLoginError('אנא הזן תעודת זהות תקינה (9 ספרות)');
+        return;
+    }
+    await doLogin(id, false);
+}
+
+async function doLogin(id_number, isAuto) {
+    if (!isAuto) {
+        document.getElementById('loginBtn').disabled = true;
+        document.getElementById('loginBtn').textContent = 'מתחבר...';
+        clearLoginError();
+    }
+
+    try {
+        const res = await fetch('/.netlify/functions/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_number })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.authorized) {
+            if (!isAuto) showLoginError(data.error || 'שגיאה בהתחברות');
+            return false;
+        }
+
+        // התחברות הצליחה
+        currentSession = data;
+        saveSession(id_number);
+        showMainScreen();
+        return true;
+
+    } catch (err) {
+        console.error(err);
+        if (!isAuto) showLoginError('שגיאת רשת - נסה שוב');
+        return false;
+    } finally {
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = 'כניסה';
+    }
+}
+
+function saveSession(id_number) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            id_number,
+            date: new Date().toDateString()
+        }));
+    } catch (e) {}
+}
+
+function clearSession() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    currentSession = null;
+}
+
+function logout() {
+    if (!confirm('האם להתנתק?')) return;
+    clearSession();
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('loginCard').style.display = 'block';
+    document.getElementById('idInput').value = '';
+    document.getElementById('idInput').focus();
+}
+
+function showMainScreen() {
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+
+    const greeting = currentSession.full_name 
+        ? `שלום, ${currentSession.full_name}` 
+        : 'שלום';
+    document.getElementById('greeting').textContent = greeting;
+    
+    updateRemainingDisplay();
+    updateCounter();
+}
+
+function updateRemainingDisplay() {
+    const remaining = currentSession?.remaining ?? 0;
+    document.getElementById('remainingCount').textContent = remaining;
+    
+    // אם נגמרו - השבת את כפתור הניתוח
+    const btn = document.getElementById('analyzeBtn');
+    if (remaining <= 0) {
+        btn.disabled = true;
+        btn.textContent = 'הגעת למקסימום היומי';
+    } else {
+        btn.disabled = false;
+        btn.textContent = 'נתח את הטקסט';
+    }
+}
+
+function showLoginError(msg) {
+    document.getElementById('loginError').innerHTML = `<div class="error-msg">⚠️ ${msg}</div>`;
+}
+
+function clearLoginError() {
+    document.getElementById('loginError').innerHTML = '';
+}
+
+// ============= פונקציות ניתוח =============
 function updateCounter() {
     const text = document.getElementById('text').value;
     const counter = document.getElementById('charCounter');
@@ -252,6 +454,12 @@ function clearError() {
 }
 
 async function analyzeText() {
+    if (!currentSession || !currentSession.id_number) {
+        alert('פג תוקף ההתחברות - יש להתחבר מחדש');
+        logout();
+        return;
+    }
+
     clearError();
     const text = document.getElementById('text').value.trim();
 
@@ -264,13 +472,11 @@ async function analyzeText() {
         return;
     }
 
-    // הסתרת קלט והצגת טעינה
     document.getElementById('inputCard').style.display = 'none';
     document.getElementById('resultCard').style.display = 'none';
     document.getElementById('resetBtn').style.display = 'none';
     document.getElementById('loadingCard').style.display = 'block';
 
-    // אנימציית טקסט הטעינה
     const loadingMessages = [
         'המערכת מנתחת את הטקסט...',
         'מזהה דפוסי כתיבה...',
@@ -287,25 +493,51 @@ async function analyzeText() {
         const res = await fetch('/.netlify/functions/analyze-light', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+            body: JSON.stringify({ 
+                text,
+                id_number: currentSession.id_number 
+            })
         });
 
         const data = await res.json();
+        clearInterval(loadingInterval);
 
         if (!res.ok) {
+            // אם הת.ז. לא מורשית או הסתיימו השימושים
+            if (res.status === 403 || res.status === 401) {
+                alert(data.error || 'אין הרשאה');
+                logout();
+                return;
+            }
+            if (res.status === 429) {
+                // הגיע למגבלה
+                document.getElementById('loadingCard').style.display = 'none';
+                document.getElementById('inputCard').style.display = 'block';
+                if (data.used_today !== undefined) {
+                    currentSession.used_today = data.used_today;
+                    currentSession.remaining = 0;
+                }
+                updateRemainingDisplay();
+                showError(data.error);
+                return;
+            }
             throw new Error(data.error || 'שגיאה בניתוח');
         }
 
-        clearInterval(loadingInterval);
+        // עדכון מונה השימושים
+        if (data.remaining !== undefined) {
+            currentSession.remaining = data.remaining;
+            currentSession.used_today = data.used_today;
+        }
+
         displayResult(data);
 
         if (data._version) {
-            console.log(`✓ נותח על ידי analyze-light v${data._version} (${data._duration_ms}ms)`);
+            console.log(`✓ נותח ע"י analyze-light v${data._version} (${data._duration_ms}ms) | בדיקות נותרו: ${data.remaining}`);
         }
     } catch (err) {
         clearInterval(loadingInterval);
         console.error(err);
-        // חזרה למסך קלט
         document.getElementById('loadingCard').style.display = 'none';
         document.getElementById('inputCard').style.display = 'block';
         showError(err.message || 'שגיאה לא צפויה - אנא נסה שוב');
@@ -326,9 +558,8 @@ function displayResult(data) {
     document.getElementById('verdictIcon').textContent = info.icon;
     document.getElementById('verdictText').textContent = info.text;
 
-    // אנימציה של אחוז עולה
-    const target = likelihood;
     let current = 0;
+    const target = likelihood;
     const el = document.getElementById('aiLikelihood');
     const step = Math.max(1, Math.ceil(target / 30));
     const animInterval = setInterval(() => {
@@ -341,6 +572,7 @@ function displayResult(data) {
     }, 25);
 
     document.getElementById('resetBtn').style.display = 'block';
+    updateRemainingDisplay();
 }
 
 function reset() {
@@ -351,9 +583,6 @@ function reset() {
     document.getElementById('inputCard').style.display = 'block';
     document.getElementById('text').focus();
 }
-
-// אתחול
-updateCounter();
 </script>
 
 </body>
