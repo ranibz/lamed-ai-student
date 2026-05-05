@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- גרסה: 2.0.0 | תאריך: 2026-05-04 | הוספת מסך כניסה עם ת.ז., אימות מול רשימה מורשית, הצגת מספר בדיקות שנותרו -->
+<!-- גרסה: 2.0.2 | תאריך: 2026-05-04 | תיקון אבטחה: ביטול auto-login - תמיד מבקשים ת.ז. מחדש כדי למנוע התחברות לחשבון של תלמיד אחר -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -225,7 +225,7 @@ footer {
 <div class="container">
 
 <header>
-    <h1>בדיקת AI <span class="ver">v2.0.0</span></h1>
+    <h1>בדיקת AI <span class="ver">v2.0.2</span></h1>
     <p>מערכת זיהוי כתיבת AI לתלמידי תקשורת</p>
 </header>
 
@@ -291,21 +291,9 @@ let currentSession = null;
 
 // ============= אתחול =============
 window.addEventListener('DOMContentLoaded', () => {
-    // בדיקה אם יש session שמור (תוקף יום אחד)
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const session = JSON.parse(saved);
-            const today = new Date().toDateString();
-            if (session.date === today && session.id_number) {
-                // ננסה להתחבר אוטומטית
-                autoLogin(session.id_number);
-                return;
-            }
-        }
-    } catch (e) {}
-    
-    // אם אין session - מציג מסך כניסה
+    // v2.0.2: ביטול auto-login - תמיד מבקשים ת.ז. מחדש
+    // מנקים גם sessions ישנים שאולי נשמרו
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
     document.getElementById('idInput').focus();
 });
 
@@ -361,7 +349,7 @@ async function doLogin(id_number, isAuto) {
 
         // התחברות הצליחה
         currentSession = data;
-        saveSession(id_number);
+        // v2.0.2: לא שומרים session ב-localStorage (מניעת התחברות לחשבון של תלמיד אחר)
         showMainScreen();
         return true;
 
