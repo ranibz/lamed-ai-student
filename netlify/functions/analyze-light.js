@@ -1,8 +1,7 @@
 // netlify/functions/analyze-light.js
-// גרסה: 2.0.0 | תאריך: 2026-05-04 | הוספת אימות ת.ז. + הגבלת שימושים יומית מתוך טבלת system_settings
-// רק תלמידים מורשים יכולים להשתמש, ועד מקסימום השימושים שהוגדר
+// גרסה: 2.0.1 | תאריך: 2026-05-04 | הוספת retry אוטומטי 3 פעמים במקרה של 503/429 מ-Gemini, הודעת שגיאה ידידותית בעומס
 
-const FUNCTION_VERSION = '2.0.0';
+const FUNCTION_VERSION = '2.0.1';
 
 async function supabaseRequest(path, options = {}) {
     const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -187,28 +186,54 @@ ${text}
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-        const geminiResponse = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.3,
-                    maxOutputTokens: 2048,
-                    responseMimeType: "application/json"
-                }
-            })
+        const geminiBody = JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.3,
+                maxOutputTokens: 2048,
+                responseMimeType: "application/json"
+            }
         });
 
+        // קריאה ל-Gemini עם retry אוטומטי במקרה של עומס (503) או rate limit (429)
+        let geminiResponse;
+        let lastErrText = '';
+        const MAX_RETRIES = 3;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            geminiResponse = await fetch(geminiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: geminiBody
+            });
+
+            if (geminiResponse.ok) break;
+
+            lastErrText = await geminiResponse.text();
+            console.log(`[analyze-light] Attempt ${attempt}/${MAX_RETRIES} failed: ${geminiResponse.status}`);
+
+            // אם זו שגיאת עומס זמנית - חכה ונסה שוב
+            if ((geminiResponse.status === 503 || geminiResponse.status === 429) && attempt < MAX_RETRIES) {
+                const waitMs = attempt * 1500; // 1.5s, 3s
+                await new Promise(r => setTimeout(r, waitMs));
+                continue;
+            }
+
+            // שגיאה אחרת או נגמרו הניסיונות
+            break;
+        }
+
         if (!geminiResponse.ok) {
-            const errText = await geminiResponse.text();
-            console.error('[analyze-light] Gemini error:', errText);
+            console.error('[analyze-light] All retries failed:', lastErrText);
+            const isOverload = geminiResponse.status === 503 || geminiResponse.status === 429;
             return {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({ 
-                    error: 'שגיאה בתקשורת עם שירות הניתוח',
-                    details: errText.substring(0, 200)
+                    error: isOverload 
+                        ? 'שירות הניתוח עמוס כרגע. אנא נסה שוב בעוד דקה'
+                        : 'שגיאה בתקשורת עם שירות הניתוח',
+                    details: lastErrText.substring(0, 200)
                 })
             };
         }
