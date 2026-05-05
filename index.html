@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- גרסה: 1.0.0 | תאריך: 2026-05-04 | גרסה רזה לתלמידים: רק אחוז וורדיקט. ללא בחירת מחוון, ללא שאלות לבוחן. מהיר ופשוט. -->
+<!-- גרסה: 1.0.1 | תאריך: 2026-05-04 | תיקון: נתיב API ישיר ל-/.netlify/functions/ במקום /api/ (אין redirect ברפו זה) -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -188,7 +188,7 @@ footer {
 <div class="container">
 
 <header>
-    <h1>בדיקת AI <span class="ver">v1.0.0</span></h1>
+    <h1>בדיקת AI <span class="ver">v1.0.1</span></h1>
     <p>הדבק את הטקסט שלך וקבל הערכת אחוז שימוש ב-AI</p>
 </header>
 
@@ -284,7 +284,7 @@ async function analyzeText() {
     }, 1500);
 
     try {
-        const res = await fetch('/api/analyze-light', {
+        const res = await fetch('/.netlify/functions/analyze-light', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text })
