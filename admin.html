@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<!-- גרסה: 1.0.0 | תאריך: 2026-05-04 | מסך אדמין: ניהול תלמידים מורשים, העלאת Excel, סטטיסטיקות שימוש, הגדרת מקסימום בדיקות -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול - מערכת בדיקת AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+    --primary: #6c5ce7;
+    --primary-dark: #5f48d4;
+    --bg: #f5f3ff;
+    --card: #ffffff;
+    --text: #2d3436;
+    --text-dim: #636e72;
+    --border: #e5e0fa;
+    --danger: #e74c3c;
+    --success: #00b894;
+    --warning: #fdcb6e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.5;
+}
+.container { max-width: 960px; margin: 0 auto; }
+header {
+    text-align: center;
+    padding: 24px 16px 20px;
+}
+header h1 {
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin-bottom: 6px;
+}
+header h1 .ver {
+    font-size: 11px;
+    background: rgba(108,92,231,0.12);
+    padding: 3px 9px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-family: monospace;
+    margin-right: 8px;
+    color: var(--primary);
+    vertical-align: middle;
+}
+.card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 4px 14px rgba(108,92,231,0.08);
+    margin-bottom: 16px;
+}
+.card h2 {
+    font-size: 1.2rem;
+    color: var(--primary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+input[type="text"], input[type="password"], input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 1rem;
+}
+input:focus { outline: none; border-color: var(--primary); }
+.btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-danger { background: var(--danger); }
+.btn-success { background: var(--success); }
+.btn-small { padding: 6px 12px; font-size: 0.85rem; }
+.error-msg {
+    background: #ffe0e0;
+    color: var(--danger);
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-weight: 500;
+}
+.success-msg {
+    background: #d4f5e9;
+    color: var(--success);
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-weight: 500;
+}
+.upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 30px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.upload-area:hover {
+    border-color: var(--primary);
+    background: var(--bg);
+}
+.upload-area .icon { font-size: 2.5rem; margin-bottom: 8px; }
+.upload-area input { display: none; }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+th, td {
+    text-align: right;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+}
+th {
+    background: var(--bg);
+    font-weight: 700;
+    color: var(--primary);
+    position: sticky;
+    top: 0;
+}
+.table-wrapper {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.stat-box {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 14px;
+    border-radius: 12px;
+    text-align: center;
+}
+.stat-box .num { font-size: 2rem; font-weight: 900; line-height: 1; }
+.stat-box .label { font-size: 0.8rem; opacity: 0.9; margin-top: 4px; }
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+}
+.tab {
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+}
+.tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 120px; }
+.row .btn { flex: 0 0 auto; }
+.search-box {
+    margin-bottom: 10px;
+    width: 100%;
+}
+.warning-box {
+    background: #fff8e1;
+    border: 2px solid var(--warning);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+    <h1>ניהול מערכת בדיקת AI <span class="ver">v1.0.0</span></h1>
+</header>
+
+<!-- מסך כניסה -->
+<div id="loginCard" class="card">
+    <h2>🔒 כניסת אדמין</h2>
+    <input type="password" id="adminPass" placeholder="סיסמת אדמין" onkeypress="if(event.key==='Enter')adminLogin()">
+    <button class="btn" onclick="adminLogin()" style="margin-top:10px;width:100%;">כניסה</button>
+    <div id="loginError"></div>
+</div>
+
+<!-- מסך ניהול -->
+<div id="mainScreen" style="display:none;">
+    
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('students')">תלמידים</button>
+        <button class="tab" onclick="switchTab('upload')">העלאת רשימה</button>
+        <button class="tab" onclick="switchTab('stats')">סטטיסטיקות</button>
+        <button class="tab" onclick="switchTab('settings')">הגדרות</button>
+    </div>
+
+    <!-- טאב תלמידים -->
+    <div id="tab-students" class="tab-content active">
+        <div class="card">
+            <h2>👥 רשימת תלמידים מורשים</h2>
+            <div class="row" style="margin-bottom:14px;">
+                <input type="text" id="newStudentId" placeholder="ת.ז. (9 ספרות)" maxlength="9" inputmode="numeric">
+                <input type="text" id="newStudentName" placeholder="שם מלא (אופציונלי)">
+                <input type="text" id="newStudentClass" placeholder="כיתה (אופציונלי)">
+                <button class="btn" onclick="addStudent()">➕ הוסף</button>
+            </div>
+            <input type="text" class="search-box" id="searchInput" placeholder="🔍 חיפוש לפי ת.ז. או שם..." oninput="renderStudents()">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ת.ז.</th>
+                            <th>שם</th>
+                            <th>כיתה</th>
+                            <th>פעיל</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTable">
+                        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-dim);">טוען...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- טאב העלאת רשימה -->
+    <div id="tab-upload" class="tab-content">
+        <div class="card">
+            <h2>📤 העלאת רשימת תלמידים מאקסל</h2>
+            <div class="warning-box">
+                <strong>הקובץ צריך לכלול:</strong><br>
+                • עמודה עם <strong>ת.ז.</strong> (חובה) - תמיכה בשמות: "ת.ז.", "תז", "תעודת זהות", "מספר זהות"<br>
+                • עמודה עם <strong>שם</strong> (אופציונלי) - "שם", "שם מלא", "שם תלמיד"<br>
+                • עמודה עם <strong>כיתה</strong> (אופציונלי) - "כיתה", "מחזור"
+            </div>
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="icon">📄</div>
+                <p><strong>לחץ להעלאת קובץ Excel</strong></p>
+                <p style="font-size:0.85rem;color:var(--text-dim);">.xlsx, .xls, .csv</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileUpload(event)" onclick="event.stopPropagation()">
+            </div>
+            <div id="previewSection" style="display:none;margin-top:16px;">
+                <h3 style="margin-bottom:10px;">תצוגה מקדימה (<span id="previewCount">0</span> תלמידים)</h3>
+                <div class="table-wrapper" style="max-height:300px;">
+                    <table>
+                        <thead><tr><th>ת.ז.</th><th>שם</th><th>כיתה</th></tr></thead>
+                        <tbody id="previewTable"></tbody>
+                    </table>
+                </div>
+                <div class="row" style="margin-top:14px;">
+                    <button class="btn btn-success" onclick="saveStudentList(false)">➕ הוסף לרשימה הקיימת</button>
+                    <button class="btn btn-danger" onclick="saveStudentList(true)">🔄 החלף את כל הרשימה</button>
+                </div>
+            </div>
+            <div id="uploadMsg"></div>
+        </div>
+    </div>
+
+    <!-- טאב סטטיסטיקות -->
+    <div id="tab-stats" class="tab-content">
+        <div class="card">
+            <h2>📊 סטטיסטיקות שימוש</h2>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-box"><div class="num" id="statTotal">-</div><div class="label">תלמידים מורשים</div></div>
+                <div class="stat-box"><div class="num" id="statToday">-</div><div class="label">בדיקות היום</div></div>
+                <div class="stat-box"><div class="num" id="statWeek">-</div><div class="label">בדיקות השבוע</div></div>
+                <div class="stat-box"><div class="num" id="statTotal30">-</div><div class="label">בדיקות 30 ימים</div></div>
+            </div>
+            <h3 style="margin:16px 0 10px;">שימוש לפי תלמיד היום</h3>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>ת.ז.</th><th>שם</th><th>בדיקות היום</th><th>פעולות</th></tr></thead>
+                    <tbody id="usageTable">
+                        <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-dim);">טוען...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- טאב הגדרות -->
+    <div id="tab-settings" class="tab-content">
+        <div class="card">
+            <h2>⚙️ הגדרות מערכת</h2>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-weight:700;margin-bottom:6px;">מקסימום בדיקות לתלמיד ביום</label>
+                <div class="row">
+                    <input type="number" id="maxUsesInput" min="1" max="50" value="3">
+                    <button class="btn" onclick="saveMaxUses()">שמור</button>
+                </div>
+                <div id="settingsMsg"></div>
+            </div>
+        </div>
+        <div class="card">
+            <h2>🔧 הוראות הקמה ראשונית</h2>
+            <p style="margin-bottom:10px;">בפעם הראשונה ב-Supabase צריך להריץ:</p>
+            <button class="btn btn-small" onclick="showSetupSQL()">הצג SQL להרצה</button>
+            <pre id="setupSqlBox" style="display:none;background:#f5f5f5;padding:12px;border-radius:8px;margin-top:10px;font-size:0.8rem;overflow-x:auto;direction:ltr;text-align:left;"></pre>
+        </div>
+    </div>
+
+</div>
+
+<footer style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:16px 8px;">
+    מערכת בדיקת AI · בית חינוך גליל מערבי · ניהול
+</footer>
+
+</div>
+
+<script>
+// ⚠️ סיסמת אדמין - שנה את הערך הזה לסיסמה שלך
+const ADMIN_PASSWORD = 'Galil2025!';
+
+// קונפיגורציית Supabase - חייבים להגדיר באמצעות env vars או כאן
+// אנחנו משתמשים בקריאות ישירות ל-Supabase מה-frontend (לקריאה בלבד דרך RLS)
+// או דרך פונקציות שרת
+const ADMIN_STORAGE_KEY = 'lamed_admin_session';
+let allStudents = [];
+let pendingStudents = [];
+
+// ============ אימות ============
+window.addEventListener('DOMContentLoaded', () => {
+    try {
+        const saved = sessionStorage.getItem(ADMIN_STORAGE_KEY);
+        if (saved === 'authenticated') {
+            showMain();
+            return;
+        }
+    } catch(e) {}
+    document.getElementById('adminPass').focus();
+});
+
+function adminLogin() {
+    const pass = document.getElementById('adminPass').value;
+    if (pass === ADMIN_PASSWORD) {
+        try { sessionStorage.setItem(ADMIN_STORAGE_KEY, 'authenticated'); } catch(e) {}
+        showMain();
+    } else {
+        document.getElementById('loginError').innerHTML = '<div class="error-msg">⚠️ סיסמה שגויה</div>';
+    }
+}
+
+function showMain() {
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+    loadStudents();
+    loadStats();
+    loadSettings();
+}
+
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'stats') loadStats();
+    if (name === 'students') loadStudents();
+}
+
+// ============ תלמידים ============
+async function loadStudents() {
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'list_students', password: ADMIN_PASSWORD })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        allStudents = data.students || [];
+        renderStudents();
+    } catch (err) {
+        document.getElementById('studentsTable').innerHTML = `<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:20px;">שגיאה: ${err.message}</td></tr>`;
+    }
+}
+
+function renderStudents() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = allStudents.filter(s => 
+        s.id_number.includes(search) || 
+        (s.full_name || '').toLowerCase().includes(search) ||
+        (s.class_name || '').toLowerCase().includes(search)
+    );
+    
+    if (!filtered.length) {
+        document.getElementById('studentsTable').innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-dim);">${allStudents.length === 0 ? 'אין תלמידים. העלה רשימה מאקסל או הוסף ידנית.' : 'לא נמצאו תוצאות לחיפוש'}</td></tr>`;
+        return;
+    }
+    
+    document.getElementById('studentsTable').innerHTML = filtered.map(s => `
+        <tr>
+            <td style="direction:ltr;text-align:right;">${s.id_number}</td>
+            <td>${s.full_name || '-'}</td>
+            <td>${s.class_name || '-'}</td>
+            <td>${s.is_active ? '✅' : '❌'}</td>
+            <td>
+                <button class="btn btn-small btn-danger" onclick="removeStudent('${s.id_number}')">הסר</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function addStudent() {
+    const id = document.getElementById('newStudentId').value.trim();
+    const name = document.getElementById('newStudentName').value.trim();
+    const cls = document.getElementById('newStudentClass').value.trim();
+    
+    if (!id || !/^\d{7,9}$/.test(id)) {
+        alert('יש להזין ת.ז. תקינה (7-9 ספרות)');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'add_student', 
+                password: ADMIN_PASSWORD,
+                id_number: id,
+                full_name: name,
+                class_name: cls
+            })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('newStudentId').value = '';
+        document.getElementById('newStudentName').value = '';
+        document.getElementById('newStudentClass').value = '';
+        await loadStudents();
+    } catch (err) {
+        alert('שגיאה: ' + err.message);
+    }
+}
+
+async function removeStudent(id) {
+    if (!confirm(`להסיר את ת.ז. ${id} מהרשימה?`)) return;
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'remove_student', password: ADMIN_PASSWORD, id_number: id })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        await loadStudents();
+    } catch (err) {
+        alert('שגיאה: ' + err.message);
+    }
+}
+
+// ============ העלאת אקסל ============
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            
+            const findCol = (row, keywords) => {
+                for (const key of Object.keys(row)) {
+                    const cleanKey = String(key).trim().toLowerCase();
+                    if (keywords.some(kw => cleanKey.includes(kw.toLowerCase()))) {
+                        return row[key];
+                    }
+                }
+                return '';
+            };
+            
+            pendingStudents = json.map(row => {
+                const idRaw = findCol(row, ['ת.ז', 'תז', 'תעודת זהות', 'מספר זהות']);
+                const id = String(idRaw).replace(/\D/g, '').trim();
+                const name = String(findCol(row, ['שם מלא', 'שם תלמיד', 'שם'])).trim();
+                const cls = String(findCol(row, ['כיתה', 'מחזור'])).trim();
+                return { id_number: id, full_name: name, class_name: cls };
+            }).filter(s => s.id_number && s.id_number.length >= 7 && s.id_number.length <= 9);
+            
+            if (!pendingStudents.length) {
+                document.getElementById('uploadMsg').innerHTML = '<div class="error-msg">⚠️ לא נמצאו ת.ז. תקינות בקובץ. בדוק שיש עמודה בשם "ת.ז." או "תז".</div>';
+                return;
+            }
+            
+            document.getElementById('previewCount').textContent = pendingStudents.length;
+            document.getElementById('previewTable').innerHTML = pendingStudents.slice(0, 50).map(s => `
+                <tr><td style="direction:ltr;text-align:right;">${s.id_number}</td><td>${s.full_name || '-'}</td><td>${s.class_name || '-'}</td></tr>
+            `).join('') + (pendingStudents.length > 50 ? `<tr><td colspan="3" style="text-align:center;color:var(--text-dim);">... ועוד ${pendingStudents.length - 50}</td></tr>` : '');
+            document.getElementById('previewSection').style.display = 'block';
+            document.getElementById('uploadMsg').innerHTML = `<div class="success-msg">✅ נטענו ${pendingStudents.length} תלמידים מהקובץ</div>`;
+        } catch (err) {
+            console.error(err);
+            document.getElementById('uploadMsg').innerHTML = '<div class="error-msg">⚠️ שגיאה בקריאת הקובץ: ' + err.message + '</div>';
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function saveStudentList(replace) {
+    if (!pendingStudents.length) return;
+    const action = replace ? 'החלפת' : 'הוספת';
+    if (!confirm(`${action} ${pendingStudents.length} תלמידים. האם להמשיך?`)) return;
+    
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: replace ? 'replace_students' : 'add_students_bulk',
+                password: ADMIN_PASSWORD,
+                students: pendingStudents
+            })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('uploadMsg').innerHTML = `<div class="success-msg">✅ נשמרו ${data.added || pendingStudents.length} תלמידים</div>`;
+        pendingStudents = [];
+        document.getElementById('previewSection').style.display = 'none';
+        document.getElementById('fileInput').value = '';
+        await loadStudents();
+    } catch (err) {
+        document.getElementById('uploadMsg').innerHTML = '<div class="error-msg">⚠️ שגיאה: ' + err.message + '</div>';
+    }
+}
+
+// ============ סטטיסטיקות ============
+async function loadStats() {
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'stats', password: ADMIN_PASSWORD })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('statTotal').textContent = data.total_students ?? '-';
+        document.getElementById('statToday').textContent = data.uses_today ?? '-';
+        document.getElementById('statWeek').textContent = data.uses_week ?? '-';
+        document.getElementById('statTotal30').textContent = data.uses_30days ?? '-';
+        
+        if (data.usage_today) {
+            document.getElementById('usageTable').innerHTML = data.usage_today.length 
+                ? data.usage_today.map(u => `
+                    <tr>
+                        <td style="direction:ltr;text-align:right;">${u.id_number}</td>
+                        <td>${u.full_name || '-'}</td>
+                        <td><strong>${u.count}</strong></td>
+                        <td><button class="btn btn-small btn-danger" onclick="resetUsage('${u.id_number}')">איפוס</button></td>
+                    </tr>
+                `).join('')
+                : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-dim);">אין שימוש היום</td></tr>';
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function resetUsage(id) {
+    if (!confirm(`לאפס את השימוש של ת.ז. ${id} להיום? התלמיד יוכל לעשות שוב את מקסימום הבדיקות.`)) return;
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'reset_usage', password: ADMIN_PASSWORD, id_number: id })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        await loadStats();
+    } catch (err) {
+        alert('שגיאה: ' + err.message);
+    }
+}
+
+// ============ הגדרות ============
+async function loadSettings() {
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get_settings', password: ADMIN_PASSWORD })
+        });
+        const data = await res.json();
+        if (data.max_uses_per_day) {
+            document.getElementById('maxUsesInput').value = data.max_uses_per_day;
+        }
+    } catch (err) {}
+}
+
+async function saveMaxUses() {
+    const val = parseInt(document.getElementById('maxUsesInput').value, 10);
+    if (!val || val < 1 || val > 50) {
+        alert('ערך תקין: 1-50');
+        return;
+    }
+    try {
+        const res = await fetch('/.netlify/functions/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'set_setting', 
+                password: ADMIN_PASSWORD,
+                key: 'max_uses_per_day',
+                value: String(val)
+            })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('settingsMsg').innerHTML = '<div class="success-msg">✅ ההגדרה נשמרה</div>';
+        setTimeout(() => document.getElementById('settingsMsg').innerHTML = '', 3000);
+    } catch (err) {
+        document.getElementById('settingsMsg').innerHTML = '<div class="error-msg">⚠️ שגיאה: ' + err.message + '</div>';
+    }
+}
+
+async function showSetupSQL() {
+    try {
+        const res = await fetch('/.netlify/functions/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'setup' })
+        });
+        const data = await res.json();
+        const box = document.getElementById('setupSqlBox');
+        box.textContent = data.sql || 'לא ניתן להציג';
+        box.style.display = 'block';
+    } catch (err) {
+        alert('שגיאה: ' + err.message);
+    }
+}
+</script>
+
+</body>
+</html>
