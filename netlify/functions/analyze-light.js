@@ -1,41 +1,50 @@
 // netlify/functions/analyze-light.js
-// גרסה: 1.0.1 | תאריך: 2026-05-04 | תיקון: maxOutputTokens 256→2048 (Gemini 2.5 Flash צורך טוקנים ל-thinking פנימי לפני הפלט)
+// גרסה: 2.0.0 | תאריך: 2026-05-04 | הוספת אימות ת.ז. + הגבלת שימושים יומית מתוך טבלת system_settings
+// רק תלמידים מורשים יכולים להשתמש, ועד מקסימום השימושים שהוגדר
 
-const FUNCTION_VERSION = '1.0.1';
+const FUNCTION_VERSION = '2.0.0';
 
-// פונקציית עזר - שמירת רישום ב-Supabase (אופציונלי)
-async function logToSupabase(data) {
-    try {
-        const SUPABASE_URL = process.env.SUPABASE_URL;
-        const SUPABASE_KEY = process.env.SUPABASE_KEY;
-        
-        if (!SUPABASE_URL || !SUPABASE_KEY) {
-            return;
+async function supabaseRequest(path, options = {}) {
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_KEY = process.env.SUPABASE_KEY;
+    
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        return null;
+    }
+    
+    return await fetch(`${SUPABASE_URL}${path}`, {
+        ...options,
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
         }
-        
-        await fetch(`${SUPABASE_URL}/rest/v1/ai_checker_logs`, {
+    });
+}
+
+async function logUsage(data) {
+    try {
+        const res = await supabaseRequest('/rest/v1/student_usage', {
             method: 'POST',
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-            },
+            headers: { 'Prefer': 'return=minimal' },
             body: JSON.stringify(data)
         });
+        if (res && !res.ok) {
+            console.error('[log] Failed:', res.status);
+        }
     } catch (err) {
-        console.error('[log] Failed:', err.message);
+        console.error('[log] Error:', err.message);
     }
 }
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     console.log(`[analyze-light] v${FUNCTION_VERSION} invoked`);
     const startTime = Date.now();
     
     const ipAddress = event.headers['x-forwarded-for']?.split(',')[0]?.trim() 
         || event.headers['client-ip'] 
         || 'unknown';
-    const userAgent = event.headers['user-agent'] || 'unknown';
     
     const headers = {
         'Access-Control-Allow-Origin': '*',
@@ -56,8 +65,78 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        const { text } = JSON.parse(event.body || '{}');
+        const { text, id_number } = JSON.parse(event.body || '{}');
 
+        // ===== v2.0.0: ולידציית ת.ז. ובדיקת הרשאה =====
+        if (!id_number || typeof id_number !== 'string') {
+            return {
+                statusCode: 401,
+                headers,
+                body: JSON.stringify({ error: 'נדרשת התחברות מחדש' })
+            };
+        }
+
+        const cleanId = id_number.replace(/\D/g, '').trim();
+
+        // בדיקה ב-Supabase שהת.ז. עדיין מורשית
+        const authRes = await supabaseRequest(
+            `/rest/v1/authorized_students?id_number=eq.${cleanId}&is_active=eq.true&select=id_number`
+        );
+
+        if (!authRes || !authRes.ok) {
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ error: 'שגיאה במערכת - אנא נסה שוב' })
+            };
+        }
+
+        const authData = await authRes.json();
+        if (!authData || authData.length === 0) {
+            return {
+                statusCode: 403,
+                headers,
+                body: JSON.stringify({ error: 'תעודת הזהות לא מורשית במערכת' })
+            };
+        }
+
+        // בדיקת מגבלת שימושים יומית
+        const today = new Date().toISOString().split('T')[0];
+        const usageRes = await supabaseRequest(
+            `/rest/v1/student_usage?id_number=eq.${cleanId}&used_at=gte.${today}T00:00:00&select=id`
+        );
+
+        let usageCount = 0;
+        if (usageRes && usageRes.ok) {
+            const usageData = await usageRes.json();
+            usageCount = usageData.length;
+        }
+
+        const settingsRes = await supabaseRequest(
+            `/rest/v1/system_settings?key=eq.max_uses_per_day&select=value`
+        );
+        let maxUses = 3;
+        if (settingsRes && settingsRes.ok) {
+            const settingsData = await settingsRes.json();
+            if (settingsData?.[0]?.value) {
+                maxUses = parseInt(settingsData[0].value, 10) || 3;
+            }
+        }
+
+        if (usageCount >= maxUses) {
+            return {
+                statusCode: 429,
+                headers,
+                body: JSON.stringify({ 
+                    error: `הגעת למקסימום הבדיקות היומי (${maxUses}). אנא נסה שוב מחר או פנה למורה.`,
+                    used_today: usageCount,
+                    max_uses: maxUses
+                })
+            };
+        }
+        // ===== סוף בדיקות הרשאה =====
+
+        // ולידציות טקסט
         if (!text || typeof text !== 'string') {
             return {
                 statusCode: 400,
@@ -65,7 +144,6 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({ error: 'יש להזין טקסט לניתוח' })
             };
         }
-
         if (text.length < 50) {
             return {
                 statusCode: 400,
@@ -73,7 +151,6 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({ error: 'הטקסט קצר מדי - יש להזין לפחות 50 תווים' })
             };
         }
-
         if (text.length > 10000) {
             return {
                 statusCode: 400,
@@ -91,7 +168,7 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // פרומפט קצר ומדויק - רק אחוז וורדיקט
+        // פרומפט קצר
         const prompt = `אתה מומחה לזיהוי תוכן שנכתב על ידי בינה מלאכותית בעברית. נתח את הטקסט הבא של תלמיד תקשורת בתיכון.
 
 ⚠️ הקשר חשוב: התלמיד **חייב** להשתמש במושגים מקצועיים (כגון: מסגור, הבניית מציאות, ספירלת השתיקה, סדר יום, דנוטציה, קונוטציה, סטריאוטיפים, אושיות רשת). שימוש במושגים אלה הוא דרישה ולא סימן ל-AI.
@@ -174,7 +251,6 @@ ${text}
             }
             analysis = JSON.parse(cleaned);
         } catch (parseErr) {
-            console.error('[analyze-light] Parse error:', parseErr.message, 'raw:', responseText.substring(0, 300));
             return {
                 statusCode: 500,
                 headers,
@@ -182,7 +258,6 @@ ${text}
             };
         }
 
-        // ולידציה של התוצאה
         if (typeof analysis.ai_likelihood !== 'number' || !analysis.verdict) {
             return {
                 statusCode: 500,
@@ -191,15 +266,13 @@ ${text}
             };
         }
 
-        // תיעוד ב-Supabase
-        await logToSupabase({
+        // רישום שימוש בטבלת student_usage
+        await logUsage({
+            id_number: cleanId,
             ai_likelihood: analysis.ai_likelihood,
             verdict: analysis.verdict,
             text_length: text.length,
-            ip_address: ipAddress,
-            user_agent: userAgent.substring(0, 200),
-            duration_ms: Date.now() - startTime,
-            success: true
+            ip_address: ipAddress
         });
 
         return {
@@ -208,13 +281,16 @@ ${text}
             body: JSON.stringify({
                 ai_likelihood: analysis.ai_likelihood,
                 verdict: analysis.verdict,
+                used_today: usageCount + 1,
+                max_uses: maxUses,
+                remaining: maxUses - (usageCount + 1),
                 _version: FUNCTION_VERSION,
                 _duration_ms: Date.now() - startTime
             })
         };
 
     } catch (err) {
-        console.error('[analyze-light] Function error:', err);
+        console.error('[analyze-light] Error:', err);
         return {
             statusCode: 500,
             headers,
