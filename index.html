@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<!-- גרסה: 1.0.0 | תאריך: 2026-05-04 | גרסה רזה לתלמידים: רק אחוז וורדיקט. ללא בחירת מחוון, ללא שאלות לבוחן. מהיר ופשוט. -->
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בדיקת AI - גרסת תלמיד</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+    --primary: #6c5ce7;
+    --primary-dark: #5f48d4;
+    --bg: #f5f3ff;
+    --card: #ffffff;
+    --text: #2d3436;
+    --text-dim: #636e72;
+    --border: #e5e0fa;
+    --danger: #e74c3c;
+    --success: #00b894;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.5;
+}
+.container { max-width: 640px; margin: 0 auto; }
+header {
+    text-align: center;
+    padding: 24px 16px 20px;
+}
+header h1 {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin-bottom: 6px;
+}
+header h1 .ver {
+    font-size: 11px;
+    background: rgba(108,92,231,0.12);
+    padding: 3px 9px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-family: monospace;
+    margin-right: 8px;
+    color: var(--primary);
+    vertical-align: middle;
+}
+header p { color: var(--text-dim); font-size: 0.95rem; }
+.card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 4px 14px rgba(108,92,231,0.08);
+    margin-bottom: 16px;
+}
+label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 14px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 1rem;
+    resize: vertical;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+}
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+.char-counter {
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 6px;
+}
+.char-counter.error { color: var(--danger); font-weight: 700; }
+.btn-analyze {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    padding: 16px 24px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 12px rgba(108,92,231,0.3);
+}
+.btn-analyze:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(108,92,231,0.4);
+}
+.btn-analyze:active:not(:disabled) { transform: translateY(0); }
+.btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
+.error-msg {
+    background: #ffe0e0;
+    color: var(--danger);
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-top: 12px;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+.loading-card {
+    text-align: center;
+    padding: 40px 20px;
+    display: none;
+}
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+    color: var(--text-dim);
+    font-weight: 500;
+}
+/* כרטיס תוצאה */
+.result-card {
+    text-align: center;
+    padding: 36px 24px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    display: none;
+}
+.result-card.human { background: linear-gradient(135deg, #00b894, #55efc4); color: white; }
+.result-card.mixed { background: linear-gradient(135deg, #fdcb6e, #ffeaa7); color: #2d3436; }
+.result-card.ai { background: linear-gradient(135deg, #e17055, #fab1a0); color: white; }
+.result-card.definitely_ai { background: linear-gradient(135deg, #d63031, #fab1a0); color: white; }
+.result-card .verdict-icon { font-size: 64px; margin-bottom: 8px; }
+.result-card .verdict-text { font-size: 1.6rem; font-weight: 900; margin-bottom: 16px; }
+.result-card .ai-likelihood {
+    font-size: 5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin: 8px 0;
+}
+.result-card .ai-likelihood-label {
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+.btn-reset {
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 12px 24px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s;
+}
+.btn-reset:hover { background: var(--bg); }
+footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    padding: 16px 8px;
+    margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+    <h1>בדיקת AI <span class="ver">v1.0.0</span></h1>
+    <p>הדבק את הטקסט שלך וקבל הערכת אחוז שימוש ב-AI</p>
+</header>
+
+<!-- מסך קלט -->
+<div id="inputCard" class="card">
+    <label for="text">הטקסט לבדיקה</label>
+    <textarea id="text" placeholder="הדבק כאן את הטקסט (לפחות 50 תווים, עד 10,000)..." oninput="updateCounter()"></textarea>
+    <div id="charCounter" class="char-counter">0 / 10,000 תווים</div>
+    <button class="btn-analyze" id="analyzeBtn" onclick="analyzeText()">נתח את הטקסט</button>
+    <div id="errorMsg"></div>
+</div>
+
+<!-- מסך טעינה -->
+<div id="loadingCard" class="loading-card card">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">המערכת מנתחת את הטקסט...</div>
+</div>
+
+<!-- מסך תוצאה -->
+<div id="resultCard" class="result-card">
+    <div class="verdict-icon" id="verdictIcon">🤔</div>
+    <div class="verdict-text" id="verdictText"></div>
+    <div class="ai-likelihood" id="aiLikelihood">0%</div>
+    <div class="ai-likelihood-label">סיכוי שהטקסט נכתב על ידי AI</div>
+</div>
+<button id="resetBtn" class="btn-reset" style="display:none;" onclick="reset()">בדוק טקסט נוסף</button>
+
+<footer>
+    מערכת בדיקת AI · בית חינוך גליל מערבי
+</footer>
+
+</div>
+
+<script>
+const MIN_LENGTH = 50;
+const MAX_LENGTH = 10000;
+
+const VERDICT_INFO = {
+    'human':         { icon: '✅',  text: 'הטקסט נראה אנושי' },
+    'mixed':         { icon: '⚠️',  text: 'יש סימנים מעורבים' },
+    'ai':            { icon: '🤖',  text: 'יש סימנים חזקים ל-AI' },
+    'definitely_ai': { icon: '🚫',  text: 'הטקסט נראה כתוב על ידי AI' }
+};
+
+function updateCounter() {
+    const text = document.getElementById('text').value;
+    const counter = document.getElementById('charCounter');
+    const len = text.length;
+    counter.textContent = `${len.toLocaleString('he-IL')} / 10,000 תווים`;
+    counter.classList.remove('error');
+    if (len > MAX_LENGTH) counter.classList.add('error');
+    else if (len > 0 && len < MIN_LENGTH) counter.classList.add('error');
+}
+
+function showError(msg) {
+    document.getElementById('errorMsg').innerHTML = `<div class="error-msg">⚠️ ${msg}</div>`;
+}
+
+function clearError() {
+    document.getElementById('errorMsg').innerHTML = '';
+}
+
+async function analyzeText() {
+    clearError();
+    const text = document.getElementById('text').value.trim();
+
+    if (text.length < MIN_LENGTH) {
+        showError(`הטקסט קצר מדי - יש להזין לפחות ${MIN_LENGTH} תווים`);
+        return;
+    }
+    if (text.length > MAX_LENGTH) {
+        showError(`הטקסט ארוך מדי - מקסימום ${MAX_LENGTH} תווים`);
+        return;
+    }
+
+    // הסתרת קלט והצגת טעינה
+    document.getElementById('inputCard').style.display = 'none';
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('resetBtn').style.display = 'none';
+    document.getElementById('loadingCard').style.display = 'block';
+
+    // אנימציית טקסט הטעינה
+    const loadingMessages = [
+        'המערכת מנתחת את הטקסט...',
+        'מזהה דפוסי כתיבה...',
+        'משווה לסגנון AI...',
+        'כמעט סיימנו...'
+    ];
+    let msgIdx = 0;
+    const loadingInterval = setInterval(() => {
+        msgIdx = (msgIdx + 1) % loadingMessages.length;
+        document.getElementById('loadingText').textContent = loadingMessages[msgIdx];
+    }, 1500);
+
+    try {
+        const res = await fetch('/api/analyze-light', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || 'שגיאה בניתוח');
+        }
+
+        clearInterval(loadingInterval);
+        displayResult(data);
+
+        if (data._version) {
+            console.log(`✓ נותח על ידי analyze-light v${data._version} (${data._duration_ms}ms)`);
+        }
+    } catch (err) {
+        clearInterval(loadingInterval);
+        console.error(err);
+        // חזרה למסך קלט
+        document.getElementById('loadingCard').style.display = 'none';
+        document.getElementById('inputCard').style.display = 'block';
+        showError(err.message || 'שגיאה לא צפויה - אנא נסה שוב');
+    }
+}
+
+function displayResult(data) {
+    document.getElementById('loadingCard').style.display = 'none';
+
+    const verdict = data.verdict || 'mixed';
+    const likelihood = Math.max(0, Math.min(100, Math.round(data.ai_likelihood || 0)));
+    const info = VERDICT_INFO[verdict] || VERDICT_INFO['mixed'];
+
+    const card = document.getElementById('resultCard');
+    card.className = 'result-card ' + verdict;
+    card.style.display = 'block';
+
+    document.getElementById('verdictIcon').textContent = info.icon;
+    document.getElementById('verdictText').textContent = info.text;
+
+    // אנימציה של אחוז עולה
+    const target = likelihood;
+    let current = 0;
+    const el = document.getElementById('aiLikelihood');
+    const step = Math.max(1, Math.ceil(target / 30));
+    const animInterval = setInterval(() => {
+        current += step;
+        if (current >= target) {
+            current = target;
+            clearInterval(animInterval);
+        }
+        el.textContent = current + '%';
+    }, 25);
+
+    document.getElementById('resetBtn').style.display = 'block';
+}
+
+function reset() {
+    document.getElementById('text').value = '';
+    updateCounter();
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('resetBtn').style.display = 'none';
+    document.getElementById('inputCard').style.display = 'block';
+    document.getElementById('text').focus();
+}
+
+// אתחול
+updateCounter();
+</script>
+
+</body>
+</html>
