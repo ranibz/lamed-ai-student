@@ -1,8 +1,7 @@
 // netlify/functions/analyze-light.js
-// גרסה: 1.0.0 | תאריך: 2026-05-04 | גרסה רזה לתלמידים: רק אחוז וורדיקט. פלט מינימלי, מהיר, חוסך משאבים.
-// פונקציה שרצה בשרת Netlify - מסתירה את ה-API key ושולחת בקשה ל-Gemini
+// גרסה: 1.0.1 | תאריך: 2026-05-04 | תיקון: maxOutputTokens 256→2048 (Gemini 2.5 Flash צורך טוקנים ל-thinking פנימי לפני הפלט)
 
-const FUNCTION_VERSION = '1.0.0';
+const FUNCTION_VERSION = '1.0.1';
 
 // פונקציית עזר - שמירת רישום ב-Supabase (אופציונלי)
 async function logToSupabase(data) {
@@ -118,7 +117,7 @@ ${text}
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
                     temperature: 0.3,
-                    maxOutputTokens: 256,
+                    maxOutputTokens: 2048,
                     responseMimeType: "application/json"
                 }
             })
