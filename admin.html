@@ -498,21 +498,37 @@ function handleFileUpload(event) {
             
             const findCol = (row, keywords) => {
                 for (const key of Object.keys(row)) {
-                    const cleanKey = String(key).trim().toLowerCase();
-                    if (keywords.some(kw => cleanKey.includes(kw.toLowerCase()))) {
-                        return row[key];
+                    // ניקוי: רווחים, נקודות, מקפים, תווי בקרה
+                    const cleanKey = String(key).trim().replace(/[\s.\-_]/g, '').toLowerCase();
+                    for (const kw of keywords) {
+                        const cleanKw = String(kw).trim().replace(/[\s.\-_]/g, '').toLowerCase();
+                        if (cleanKey.includes(cleanKw) || cleanKw.includes(cleanKey)) {
+                            return row[key];
+                        }
                     }
                 }
                 return '';
             };
             
+            // לוג לאבחון - רואים בקונסול אילו עמודות יש
+            if (json.length > 0) {
+                console.log('עמודות שנמצאו בקובץ:', Object.keys(json[0]));
+            }
+            
             pendingStudents = json.map(row => {
-                const idRaw = findCol(row, ['ת.ז', 'תז', 'תעודת זהות', 'מספר זהות']);
+                const idRaw = findCol(row, ['תז', 'תעודתזהות', 'מספרזהות', 'id', 'תעודה']);
                 const id = String(idRaw).replace(/\D/g, '').trim();
-                const name = String(findCol(row, ['שם מלא', 'שם תלמיד', 'שם'])).trim();
+                const name = String(findCol(row, ['שםמלא', 'שםהתלמיד', 'שםתלמיד', 'שם'])).trim();
                 const cls = String(findCol(row, ['כיתה', 'מחזור'])).trim();
                 return { id_number: id, full_name: name, class_name: cls };
             }).filter(s => s.id_number && s.id_number.length >= 7 && s.id_number.length <= 9);
+            
+            // אם לא נמצאו תלמידים, הצג מה היו העמודות בקובץ
+            if (!pendingStudents.length && json.length > 0) {
+                const cols = Object.keys(json[0]).join(', ');
+                document.getElementById('uploadMsg').innerHTML = `<div class="error-msg">⚠️ לא נמצאו ת.ז. תקינות. עמודות בקובץ: <strong>${cols}</strong>. בדוק שיש עמודה עם ת.ז.</div>`;
+                return;
+            }
             
             if (!pendingStudents.length) {
                 document.getElementById('uploadMsg').innerHTML = '<div class="error-msg">⚠️ לא נמצאו ת.ז. תקינות בקובץ. בדוק שיש עמודה בשם "ת.ז." או "תז".</div>';
