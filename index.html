@@ -1,587 +1,363 @@
 <!DOCTYPE html>
-<!-- גרסה: 2.0.0 | תאריך: 2026-05-04 | הוספת מסך כניסה עם ת.ז., אימות מול רשימה מורשית, הצגת מספר בדיקות שנותרו -->
+<!-- גרסה: 1.0.0 | תאריך: 2026-05-04 | דף נחיתה מרכזי: בדיקת תלמיד, בדיקת מורה, אדמין. כולל יצירת קישור להעתקה לתלמיד -->
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>בדיקת AI - גרסת תלמיד</title>
+<title>מערכת בדיקת AI - בית חינוך גליל מערבי</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
     --primary: #6c5ce7;
     --primary-dark: #5f48d4;
+    --teacher: #1976d2;
+    --teacher-dark: #1565c0;
+    --admin: #00b894;
+    --admin-dark: #00997b;
     --bg: #f5f3ff;
     --card: #ffffff;
     --text: #2d3436;
     --text-dim: #636e72;
     --border: #e5e0fa;
-    --danger: #e74c3c;
-    --success: #00b894;
-    --warning: #fdcb6e;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: 'Heebo', sans-serif;
-    background: var(--bg);
+    background: linear-gradient(135deg, #f5f3ff 0%, #e8e3fc 100%);
     color: var(--text);
     min-height: 100vh;
     padding: 16px;
-    line-height: 1.5;
+    line-height: 1.6;
 }
-.container { max-width: 640px; margin: 0 auto; }
+.container { max-width: 720px; margin: 0 auto; padding: 30px 0; }
+
 header {
     text-align: center;
-    padding: 24px 16px 20px;
+    margin-bottom: 36px;
+}
+header .logo {
+    display: inline-block;
+    font-size: 4rem;
+    margin-bottom: 8px;
 }
 header h1 {
-    font-size: 1.6rem;
+    font-size: 2rem;
     font-weight: 900;
     color: var(--primary);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
-header h1 .ver {
-    font-size: 11px;
-    background: rgba(108,92,231,0.12);
-    padding: 3px 9px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-family: monospace;
-    margin-right: 8px;
-    color: var(--primary);
-    vertical-align: middle;
+header .subtitle {
+    color: var(--text-dim);
+    font-size: 1rem;
 }
-header p { color: var(--text-dim); font-size: 0.95rem; }
-.card {
+header .school {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.cards-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.option-card {
     background: var(--card);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+    text-align: right;
+    position: relative;
+    overflow: hidden;
+}
+.option-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+.option-card .icon-area {
+    width: 64px;
+    height: 64px;
     border-radius: 16px;
-    padding: 22px;
-    box-shadow: 0 4px 14px rgba(108,92,231,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-bottom: 14px;
+}
+.option-card.student { border-color: rgba(108,92,231,0.2); }
+.option-card.student:hover { border-color: var(--primary); }
+.option-card.student .icon-area { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; }
+
+.option-card.teacher { border-color: rgba(25,118,210,0.2); }
+.option-card.teacher:hover { border-color: var(--teacher); }
+.option-card.teacher .icon-area { background: linear-gradient(135deg, #1976d2, #64b5f6); color: white; }
+
+.option-card.admin { border-color: rgba(0,184,148,0.2); }
+.option-card.admin:hover { border-color: var(--admin); }
+.option-card.admin .icon-area { background: linear-gradient(135deg, #00b894, #55efc4); color: white; }
+
+.option-card h2 {
+    font-size: 1.4rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+    color: var(--text);
+}
+.option-card p {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 14px;
+}
+.option-card .features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-bottom: 16px;
 }
-label {
-    display: block;
-    font-weight: 700;
-    margin-bottom: 8px;
-    font-size: 1rem;
-}
-input[type="text"], textarea {
-    width: 100%;
-    padding: 14px;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    font-family: 'Heebo', sans-serif;
-    font-size: 1rem;
-    line-height: 1.6;
-    transition: border-color 0.2s;
-}
-textarea {
-    min-height: 200px;
-    resize: vertical;
-}
-input[type="text"]:focus, textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-input.id-input {
-    text-align: center;
-    font-size: 1.4rem;
-    letter-spacing: 4px;
-    font-weight: 700;
-    direction: ltr;
-}
-.char-counter {
-    text-align: left;
-    font-size: 0.85rem;
+.option-card .feature-tag {
+    background: var(--bg);
     color: var(--text-dim);
-    margin-top: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
 }
-.char-counter.error { color: var(--danger); font-weight: 700; }
-.btn {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+
+.option-card .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-primary {
+    background: var(--primary);
     color: white;
     border: none;
-    padding: 16px 24px;
-    width: 100%;
-    border-radius: 12px;
-    font-size: 1.1rem;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 0.95rem;
     font-weight: 700;
     font-family: 'Heebo', sans-serif;
     cursor: pointer;
-    margin-top: 16px;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 4px 12px rgba(108,92,231,0.3);
+    flex: 1;
+    min-width: 130px;
+    transition: opacity 0.15s;
 }
-.btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(108,92,231,0.4);
-}
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-primary:hover { opacity: 0.9; }
+.option-card.teacher .btn-primary { background: var(--teacher); }
+.option-card.admin .btn-primary { background: var(--admin); }
+
 .btn-secondary {
     background: white;
-    color: var(--primary);
     border: 2px solid var(--primary);
-    padding: 12px 24px;
-    box-shadow: none;
-}
-.btn-secondary:hover:not(:disabled) {
-    background: var(--bg);
-    box-shadow: none;
-}
-.error-msg {
-    background: #ffe0e0;
-    color: var(--danger);
-    padding: 12px 14px;
+    color: var(--primary);
+    padding: 9px 16px;
     border-radius: 10px;
-    margin-top: 12px;
-    font-weight: 500;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--bg); }
+
+/* מודל הקישור */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(45,52,54,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+    background: white;
+    border-radius: 18px;
+    padding: 28px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal h3 {
+    font-size: 1.3rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+.modal p {
+    color: var(--text-dim);
+    margin-bottom: 16px;
     font-size: 0.95rem;
 }
-.info-bar {
-    background: linear-gradient(135deg, #e8e3fc, #f3eefe);
+.link-box {
+    background: var(--bg);
     border: 2px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--primary);
+    word-break: break-all;
+    direction: ltr;
+    text-align: left;
+    margin-bottom: 14px;
+}
+.modal-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
     gap: 10px;
     flex-wrap: wrap;
 }
-.info-bar .greeting {
-    font-weight: 700;
-    color: var(--primary);
-    font-size: 0.95rem;
+.modal-actions button {
+    flex: 1;
+    min-width: 130px;
 }
-.info-bar .usage {
-    font-size: 0.85rem;
-    color: var(--text-dim);
-}
-.info-bar .usage strong {
-    color: var(--primary);
-    font-size: 1rem;
-}
-.btn-logout {
-    background: transparent;
-    color: var(--text-dim);
-    border: 1px solid var(--border);
-    padding: 6px 12px;
+.copy-success {
+    background: #d4f5e9;
+    color: #00997b;
+    padding: 10px;
     border-radius: 8px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    font-family: 'Heebo', sans-serif;
-}
-.btn-logout:hover { background: var(--border); }
-.loading-card {
     text-align: center;
-    padding: 40px 20px;
+    margin-bottom: 14px;
+    font-weight: 700;
     display: none;
 }
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid var(--border);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { color: var(--text-dim); font-weight: 500; }
-.result-card {
-    text-align: center;
-    padding: 36px 24px;
-    border-radius: 16px;
-    margin-bottom: 16px;
-    display: none;
-}
-.result-card.human { background: linear-gradient(135deg, #00b894, #55efc4); color: white; }
-.result-card.mixed { background: linear-gradient(135deg, #fdcb6e, #ffeaa7); color: #2d3436; }
-.result-card.ai { background: linear-gradient(135deg, #e17055, #fab1a0); color: white; }
-.result-card.definitely_ai { background: linear-gradient(135deg, #d63031, #fab1a0); color: white; }
-.result-card .verdict-icon { font-size: 64px; margin-bottom: 8px; }
-.result-card .verdict-text { font-size: 1.6rem; font-weight: 900; margin-bottom: 16px; }
-.result-card .ai-likelihood {
-    font-size: 5rem;
-    font-weight: 900;
-    line-height: 1;
-    margin: 8px 0;
-}
-.result-card .ai-likelihood-label {
-    font-size: 1rem;
-    opacity: 0.9;
-    font-weight: 500;
-}
+.copy-success.visible { display: block; }
+
 footer {
     text-align: center;
     color: var(--text-dim);
-    font-size: 0.8rem;
-    padding: 16px 8px;
-    margin-top: 8px;
+    font-size: 0.85rem;
+    margin-top: 24px;
 }
+footer a { color: var(--primary); text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="container">
 
 <header>
-    <h1>בדיקת AI <span class="ver">v2.0.0</span></h1>
-    <p>מערכת זיהוי כתיבת AI לתלמידי תקשורת</p>
+    <div class="logo">🤖</div>
+    <h1>מערכת בדיקת AI</h1>
+    <div class="subtitle">זיהוי כתיבה של בינה מלאכותית בעבודות חקר</div>
+    <div class="school">בית חינוך גליל מערבי</div>
 </header>
 
-<!-- מסך כניסה -->
-<div id="loginCard" class="card">
-    <label for="idInput">תעודת זהות</label>
-    <input type="text" id="idInput" class="id-input" placeholder="הקלד 9 ספרות" maxlength="9" inputmode="numeric" pattern="[0-9]*">
-    <button class="btn" id="loginBtn" onclick="login()">כניסה</button>
-    <div id="loginError"></div>
-</div>
+<div class="cards-grid">
 
-<!-- מסך ראשי (אחרי כניסה) -->
-<div id="mainScreen" style="display:none;">
-    <div class="info-bar">
-        <div>
-            <div class="greeting" id="greeting">שלום</div>
-            <div class="usage">בדיקות שנותרו היום: <strong id="remainingCount">3</strong></div>
+    <!-- בדיקת תלמיד -->
+    <div class="option-card student">
+        <div class="icon-area">👨‍🎓</div>
+        <h2>בדיקת תלמיד</h2>
+        <p>גרסה מהירה לתלמידים - הזנת ת.ז. וקבלת אחוז שימוש ב-AI. מוגבל ל-3 בדיקות ביום.</p>
+        <div class="features">
+            <span class="feature-tag">⚡ מהיר</span>
+            <span class="feature-tag">🔒 ת.ז. מאובטחת</span>
+            <span class="feature-tag">📊 אחוז וורדיקט</span>
         </div>
-        <button class="btn-logout" onclick="logout()">יציאה</button>
+        <div class="actions">
+            <button class="btn-primary" onclick="window.location.href='/student.html'">כניסה לבדיקה</button>
+            <button class="btn-secondary" onclick="showStudentLink()">📋 קישור לתלמידים</button>
+        </div>
     </div>
 
-    <div id="inputCard" class="card">
-        <label for="text">הטקסט לבדיקה</label>
-        <textarea id="text" placeholder="הדבק כאן את הטקסט (לפחות 50 תווים, עד 10,000)..." oninput="updateCounter()"></textarea>
-        <div id="charCounter" class="char-counter">0 / 10,000 תווים</div>
-        <button class="btn" id="analyzeBtn" onclick="analyzeText()">נתח את הטקסט</button>
-        <div id="errorMsg"></div>
+    <!-- בדיקת מורה -->
+    <div class="option-card teacher">
+        <div class="icon-area">👨‍🏫</div>
+        <h2>בדיקת מורה (מלאה)</h2>
+        <p>גרסה מקיפה לבוחנים - אחוז AI, סימנים, שאלות לבוחן והערכת מחוון מלאה לפי פרק וסעיף.</p>
+        <div class="features">
+            <span class="feature-tag">🔍 ניתוח מעמיק</span>
+            <span class="feature-tag">📋 הערכת מחוון</span>
+            <span class="feature-tag">❓ שאלות לבוחן</span>
+        </div>
+        <div class="actions">
+            <button class="btn-primary" onclick="window.open('https://lamed-ai-checker.netlify.app/', '_blank')">פתח בדיקה מלאה</button>
+        </div>
     </div>
 
-    <div id="loadingCard" class="loading-card card">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loadingText">המערכת מנתחת את הטקסט...</div>
+    <!-- אדמין -->
+    <div class="option-card admin">
+        <div class="icon-area">⚙️</div>
+        <h2>כניסת מנהל</h2>
+        <p>ניהול תלמידים מורשים, העלאת רשימה מאקסל, סטטיסטיקות שימוש והגדרות מערכת.</p>
+        <div class="features">
+            <span class="feature-tag">👥 ניהול תלמידים</span>
+            <span class="feature-tag">📊 סטטיסטיקות</span>
+            <span class="feature-tag">⚙️ הגדרות</span>
+        </div>
+        <div class="actions">
+            <button class="btn-primary" onclick="window.location.href='/admin.html'">כניסת מנהל</button>
+        </div>
     </div>
 
-    <div id="resultCard" class="result-card">
-        <div class="verdict-icon" id="verdictIcon">🤔</div>
-        <div class="verdict-text" id="verdictText"></div>
-        <div class="ai-likelihood" id="aiLikelihood">0%</div>
-        <div class="ai-likelihood-label">סיכוי שהטקסט נכתב על ידי AI</div>
-    </div>
-    <button id="resetBtn" class="btn btn-secondary" style="display:none;" onclick="reset()">בדוק טקסט נוסף</button>
 </div>
 
 <footer>
-    מערכת בדיקת AI · בית חינוך גליל מערבי
+    מערכת בדיקת AI · בית חינוך גליל מערבי · פיתוח רני בן זאב
 </footer>
 
 </div>
 
+<!-- מודל קישור לתלמידים -->
+<div class="modal-overlay" id="linkModal" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h3>📋 קישור לבדיקת תלמיד</h3>
+        <p>זה הקישור שתשלח לתלמידים שלך. הם יזדקקו לת.ז. כדי להיכנס.</p>
+        <div class="link-box" id="studentLink"></div>
+        <div class="copy-success" id="copySuccess">✅ הקישור הועתק!</div>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="copyLink()">📋 העתק קישור</button>
+            <button class="btn-secondary" onclick="shareLink()">📱 שתף</button>
+            <button class="btn-secondary" onclick="closeModal()">סגור</button>
+        </div>
+    </div>
+</div>
+
 <script>
-const MIN_LENGTH = 50;
-const MAX_LENGTH = 10000;
-const STORAGE_KEY = 'lamed_student_session';
+function showStudentLink() {
+    const link = window.location.origin + '/student.html';
+    document.getElementById('studentLink').textContent = link;
+    document.getElementById('copySuccess').classList.remove('visible');
+    document.getElementById('linkModal').classList.add('active');
+}
 
-const VERDICT_INFO = {
-    'human':         { icon: '✅',  text: 'הטקסט נראה אנושי' },
-    'mixed':         { icon: '⚠️',  text: 'יש סימנים מעורבים' },
-    'ai':            { icon: '🤖',  text: 'יש סימנים חזקים ל-AI' },
-    'definitely_ai': { icon: '🚫',  text: 'הטקסט נראה כתוב על ידי AI' }
-};
-
-let currentSession = null;
-
-// ============= אתחול =============
-window.addEventListener('DOMContentLoaded', () => {
-    // בדיקה אם יש session שמור (תוקף יום אחד)
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const session = JSON.parse(saved);
-            const today = new Date().toDateString();
-            if (session.date === today && session.id_number) {
-                // ננסה להתחבר אוטומטית
-                autoLogin(session.id_number);
-                return;
-            }
-        }
-    } catch (e) {}
-    
-    // אם אין session - מציג מסך כניסה
-    document.getElementById('idInput').focus();
-});
-
-// סינון להזנת ספרות בלבד
-document.getElementById('idInput').addEventListener('input', (e) => {
-    e.target.value = e.target.value.replace(/\D/g, '');
-});
-
-// כניסה ב-Enter
-document.getElementById('idInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') login();
-});
-
-// ============= פונקציות כניסה =============
-async function autoLogin(id_number) {
-    // ננסה להתחבר עם הת.ז. השמורה - אם זה לא עובד, נציג מסך כניסה
-    const success = await doLogin(id_number, true);
-    if (!success) {
-        clearSession();
-        document.getElementById('idInput').focus();
+function closeModal(event) {
+    if (!event || event.target.id === 'linkModal') {
+        document.getElementById('linkModal').classList.remove('active');
     }
 }
 
-async function login() {
-    const id = document.getElementById('idInput').value.trim();
-    if (!id || id.length < 7) {
-        showLoginError('אנא הזן תעודת זהות תקינה (9 ספרות)');
-        return;
-    }
-    await doLogin(id, false);
-}
-
-async function doLogin(id_number, isAuto) {
-    if (!isAuto) {
-        document.getElementById('loginBtn').disabled = true;
-        document.getElementById('loginBtn').textContent = 'מתחבר...';
-        clearLoginError();
-    }
-
+async function copyLink() {
+    const link = document.getElementById('studentLink').textContent;
     try {
-        const res = await fetch('/.netlify/functions/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_number })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.authorized) {
-            if (!isAuto) showLoginError(data.error || 'שגיאה בהתחברות');
-            return false;
-        }
-
-        // התחברות הצליחה
-        currentSession = data;
-        saveSession(id_number);
-        showMainScreen();
-        return true;
-
+        await navigator.clipboard.writeText(link);
+        document.getElementById('copySuccess').classList.add('visible');
+        setTimeout(() => {
+            document.getElementById('copySuccess').classList.remove('visible');
+        }, 3000);
     } catch (err) {
-        console.error(err);
-        if (!isAuto) showLoginError('שגיאת רשת - נסה שוב');
-        return false;
-    } finally {
-        document.getElementById('loginBtn').disabled = false;
-        document.getElementById('loginBtn').textContent = 'כניסה';
+        alert('לא הצלחתי להעתיק. אנא בחר ידנית והעתק.');
     }
 }
 
-function saveSession(id_number) {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            id_number,
-            date: new Date().toDateString()
-        }));
-    } catch (e) {}
-}
-
-function clearSession() {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-    currentSession = null;
-}
-
-function logout() {
-    if (!confirm('האם להתנתק?')) return;
-    clearSession();
-    document.getElementById('mainScreen').style.display = 'none';
-    document.getElementById('loginCard').style.display = 'block';
-    document.getElementById('idInput').value = '';
-    document.getElementById('idInput').focus();
-}
-
-function showMainScreen() {
-    document.getElementById('loginCard').style.display = 'none';
-    document.getElementById('mainScreen').style.display = 'block';
-
-    const greeting = currentSession.full_name 
-        ? `שלום, ${currentSession.full_name}` 
-        : 'שלום';
-    document.getElementById('greeting').textContent = greeting;
-    
-    updateRemainingDisplay();
-    updateCounter();
-}
-
-function updateRemainingDisplay() {
-    const remaining = currentSession?.remaining ?? 0;
-    document.getElementById('remainingCount').textContent = remaining;
-    
-    // אם נגמרו - השבת את כפתור הניתוח
-    const btn = document.getElementById('analyzeBtn');
-    if (remaining <= 0) {
-        btn.disabled = true;
-        btn.textContent = 'הגעת למקסימום היומי';
+async function shareLink() {
+    const link = document.getElementById('studentLink').textContent;
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'בדיקת AI - מערכת לתלמידים',
+                text: 'קישור לבדיקת כתיבה של AI',
+                url: link
+            });
+        } catch (err) {}
     } else {
-        btn.disabled = false;
-        btn.textContent = 'נתח את הטקסט';
+        copyLink();
     }
-}
-
-function showLoginError(msg) {
-    document.getElementById('loginError').innerHTML = `<div class="error-msg">⚠️ ${msg}</div>`;
-}
-
-function clearLoginError() {
-    document.getElementById('loginError').innerHTML = '';
-}
-
-// ============= פונקציות ניתוח =============
-function updateCounter() {
-    const text = document.getElementById('text').value;
-    const counter = document.getElementById('charCounter');
-    const len = text.length;
-    counter.textContent = `${len.toLocaleString('he-IL')} / 10,000 תווים`;
-    counter.classList.remove('error');
-    if (len > MAX_LENGTH) counter.classList.add('error');
-    else if (len > 0 && len < MIN_LENGTH) counter.classList.add('error');
-}
-
-function showError(msg) {
-    document.getElementById('errorMsg').innerHTML = `<div class="error-msg">⚠️ ${msg}</div>`;
-}
-
-function clearError() {
-    document.getElementById('errorMsg').innerHTML = '';
-}
-
-async function analyzeText() {
-    if (!currentSession || !currentSession.id_number) {
-        alert('פג תוקף ההתחברות - יש להתחבר מחדש');
-        logout();
-        return;
-    }
-
-    clearError();
-    const text = document.getElementById('text').value.trim();
-
-    if (text.length < MIN_LENGTH) {
-        showError(`הטקסט קצר מדי - יש להזין לפחות ${MIN_LENGTH} תווים`);
-        return;
-    }
-    if (text.length > MAX_LENGTH) {
-        showError(`הטקסט ארוך מדי - מקסימום ${MAX_LENGTH} תווים`);
-        return;
-    }
-
-    document.getElementById('inputCard').style.display = 'none';
-    document.getElementById('resultCard').style.display = 'none';
-    document.getElementById('resetBtn').style.display = 'none';
-    document.getElementById('loadingCard').style.display = 'block';
-
-    const loadingMessages = [
-        'המערכת מנתחת את הטקסט...',
-        'מזהה דפוסי כתיבה...',
-        'משווה לסגנון AI...',
-        'כמעט סיימנו...'
-    ];
-    let msgIdx = 0;
-    const loadingInterval = setInterval(() => {
-        msgIdx = (msgIdx + 1) % loadingMessages.length;
-        document.getElementById('loadingText').textContent = loadingMessages[msgIdx];
-    }, 1500);
-
-    try {
-        const res = await fetch('/.netlify/functions/analyze-light', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                text,
-                id_number: currentSession.id_number 
-            })
-        });
-
-        const data = await res.json();
-        clearInterval(loadingInterval);
-
-        if (!res.ok) {
-            // אם הת.ז. לא מורשית או הסתיימו השימושים
-            if (res.status === 403 || res.status === 401) {
-                alert(data.error || 'אין הרשאה');
-                logout();
-                return;
-            }
-            if (res.status === 429) {
-                // הגיע למגבלה
-                document.getElementById('loadingCard').style.display = 'none';
-                document.getElementById('inputCard').style.display = 'block';
-                if (data.used_today !== undefined) {
-                    currentSession.used_today = data.used_today;
-                    currentSession.remaining = 0;
-                }
-                updateRemainingDisplay();
-                showError(data.error);
-                return;
-            }
-            throw new Error(data.error || 'שגיאה בניתוח');
-        }
-
-        // עדכון מונה השימושים
-        if (data.remaining !== undefined) {
-            currentSession.remaining = data.remaining;
-            currentSession.used_today = data.used_today;
-        }
-
-        displayResult(data);
-
-        if (data._version) {
-            console.log(`✓ נותח ע"י analyze-light v${data._version} (${data._duration_ms}ms) | בדיקות נותרו: ${data.remaining}`);
-        }
-    } catch (err) {
-        clearInterval(loadingInterval);
-        console.error(err);
-        document.getElementById('loadingCard').style.display = 'none';
-        document.getElementById('inputCard').style.display = 'block';
-        showError(err.message || 'שגיאה לא צפויה - אנא נסה שוב');
-    }
-}
-
-function displayResult(data) {
-    document.getElementById('loadingCard').style.display = 'none';
-
-    const verdict = data.verdict || 'mixed';
-    const likelihood = Math.max(0, Math.min(100, Math.round(data.ai_likelihood || 0)));
-    const info = VERDICT_INFO[verdict] || VERDICT_INFO['mixed'];
-
-    const card = document.getElementById('resultCard');
-    card.className = 'result-card ' + verdict;
-    card.style.display = 'block';
-
-    document.getElementById('verdictIcon').textContent = info.icon;
-    document.getElementById('verdictText').textContent = info.text;
-
-    let current = 0;
-    const target = likelihood;
-    const el = document.getElementById('aiLikelihood');
-    const step = Math.max(1, Math.ceil(target / 30));
-    const animInterval = setInterval(() => {
-        current += step;
-        if (current >= target) {
-            current = target;
-            clearInterval(animInterval);
-        }
-        el.textContent = current + '%';
-    }, 25);
-
-    document.getElementById('resetBtn').style.display = 'block';
-    updateRemainingDisplay();
-}
-
-function reset() {
-    document.getElementById('text').value = '';
-    updateCounter();
-    document.getElementById('resultCard').style.display = 'none';
-    document.getElementById('resetBtn').style.display = 'none';
-    document.getElementById('inputCard').style.display = 'block';
-    document.getElementById('text').focus();
 }
 </script>
 
